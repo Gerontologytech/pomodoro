@@ -1,7 +1,18 @@
 let timer;
 let timeLeft;
 let isBreak = false;
+// Initialize auto-restart from storage or default to true
 let autoRestart = true;
+chrome.storage.local.get(['autoRestart'], function(result) {
+    autoRestart = result.autoRestart !== false;
+});
+
+// Listen for auto-restart setting changes
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.command === 'setAutoRestart') {
+        autoRestart = message.value;
+    }
+});
 
 // Session log structure
 const createSessionLog = () => ({
@@ -38,14 +49,23 @@ function startTimer() {
   // Create new session log
   currentSession = createSessionLog();
   
-  // Initialize badge
+  // Initialize badge and popup
   updateBadge(timeLeft);
+  
+  // Send initial state to popup
+  chrome.runtime.sendMessage({ 
+    timeLeft: timeLeft,
+    isBreak: isBreak
+  });
   
   timer = setInterval(() => {
     timeLeft--;
     
     // Send time update to popup and update badge
-    chrome.runtime.sendMessage({ timeLeft: timeLeft });
+    chrome.runtime.sendMessage({ 
+      timeLeft: timeLeft,
+      isBreak: isBreak
+    });
     updateBadge(timeLeft);
     
     if (timeLeft <= 0) {
@@ -65,15 +85,25 @@ function startTimer() {
         isBreak = false;
         chrome.tabs.query({ url: chrome.runtime.getURL("break.html") }, (tabs) => {
           tabs.forEach(tab => chrome.tabs.remove(tab.id));
+          
+          // Auto-restart work session if enabled - after tab is closed
+          if (autoRestart) {
+            setTimeout(() => {
+              isBreak = false;
+              startTimer();
+              chrome.runtime.sendMessage({ 
+                timeLeft: 1500,
+                isBreak: false
+              });
+            }, 1000);
+          } else {
+            // Reset the timer display if not auto-restarting
+            chrome.runtime.sendMessage({ 
+              timeLeft: 1500,
+              isBreak: false
+            });
+          }
         });
-        
-        // Auto-restart work session if enabled
-        if (autoRestart) {
-          setTimeout(() => {
-            isBreak = false;
-            startTimer();
-          }, 1000);
-        }
       }
     }
   }, 1000);

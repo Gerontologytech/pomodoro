@@ -3,6 +3,25 @@ let timeLeft;
 let isRunning = false;
 let isBreak = false;
 
+// Function to update timer display
+function updateDisplay(time, isBreak) {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    const timerElement = document.getElementById('timer');
+    timerElement.textContent = display;
+    
+    // Update timer color based on session type
+    timerElement.style.color = isBreak ? '#FF4444' : '#4CAF50';
+    
+    // Update start button text
+    const startBtn = document.getElementById('startBtn');
+    if (startBtn.textContent !== 'Pause') {
+        startBtn.textContent = isBreak ? 'Break' : 'Start';
+    }
+}
+
 // Initialize auto-restart checkbox state
 chrome.storage.local.get(['autoRestart'], function(result) {
     const autoRestartCheckbox = document.getElementById('autoRestartCheckbox');
@@ -40,10 +59,12 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 });
 
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.timeLeft) {
-    const minutes = Math.floor(message.timeLeft / 60);
-    const seconds = message.timeLeft % 60;
-    document.getElementById('timer').textContent = 
-      `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  if (message.timeLeft !== undefined) {
+    isBreak = message.isBreak;
+    updateDisplay(message.timeLeft, message.isBreak);
+    if (message.timeLeft > 0) {
+      isRunning = true;
+      document.getElementById('startBtn').textContent = 'Pause';
+    }
   }
 });

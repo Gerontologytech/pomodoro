@@ -2,7 +2,7 @@
 
 A feature-rich Pomodoro Timer Chrome extension that helps you stay productive using the Pomodoro Technique. Track your work sessions, take structured breaks, and analyze your productivity patterns.
 
-![Pomodoro Timer Screenshot](screenshots/screenshot.png)
+![Pomodoro Timer Screenshot](assets/screenshot.png)
 
 ## Features
 
@@ -34,15 +34,15 @@ A feature-rich Pomodoro Timer Chrome extension that helps you stay productive us
 
 ## Installation
 
-### From Chrome Web Store
-1. Visit the Chrome Web Store (link coming soon)
-2. Click "Add to Chrome"
-3. Confirm the installation
+### From Chrome Web Store - TBD
+1. ~~Visit the Chrome Web Store (link coming soon)~~
+2. ~~Click "Add to Chrome"~~
+3. ~~Confirm the installation~~
 
 ### Manual Installation (Developer Mode)
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/pomodoro-chrome-extension.git
+   git clone https://github.com/Gerontologytech/pomodoro.git
    ```
 2. Open Chrome and navigate to `chrome://extensions/`
 3. Enable "Developer mode" in the top right corner
@@ -87,6 +87,8 @@ pomodoro-chrome-extension/
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
+├── assets/
+│   ├── screenshot.png
 └── README.md
 ```
 
@@ -111,7 +113,7 @@ Want to contribute? Great! Here's how:
 
 MIT License
 
-Copyright (c) [year] [your name]
+Copyright (c) [2025] [Eyal Silberman]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -154,6 +156,6 @@ See [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
 ## Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
+Eyal Silberman - gerontologytech@gmail.com
 
-Project Link: [https://github.com/yourusername/pomodoro-chrome-extension](https://github.com/yourusername/pomodoro-chrome-extension)
+Project Link: [https://github.com/Gerontologytech/pomodoro.git](https://github.com/Gerontologytech/pomodoro.git)
