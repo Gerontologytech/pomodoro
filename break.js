@@ -1,4 +1,4 @@
-let breakTimeLeft = 30; // 5 minutes in seconds
+let breakTimeLeft = 300; // 5 minutes in seconds
 
 function updateTimer() {
   const minutes = Math.floor(breakTimeLeft / 60);
