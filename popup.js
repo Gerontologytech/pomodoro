@@ -1,70 +1,62 @@
-let timer;
-let timeLeft;
-let isRunning = false;
-let isBreak = false;
-
-// Function to update timer display
-function updateDisplay(time, isBreak) {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
+document.addEventListener('DOMContentLoaded', function() {
+    // Get initial state
+    chrome.runtime.sendMessage({ command: 'getState' });
+    
+    // Initialize auto-restart checkbox
+    chrome.storage.local.get(['autoRestart'], function(result) {
+      document.getElementById('autoRestartCheckbox').checked = result.autoRestart !== false;
+    });
+  });
+  
+  // Listen for timer updates from background
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.timeLeft !== undefined) {
+      updateDisplay(message.timeLeft, message.isBreak, message.isRunning);
+    }
+  });
+  
+  // Update display function
+  function updateDisplay(timeLeft, isBreak, isRunning) {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
     const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    const timerElement = document.getElementById('timer');
-    timerElement.textContent = display;
+    // Update timer display
+    const timer = document.getElementById('timer');
+    timer.textContent = display;
+    timer.style.color = isBreak ? '#FF4444' : '#4CAF50';
     
-    // Update timer color based on session type
-    timerElement.style.color = isBreak ? '#FF4444' : '#4CAF50';
-    
-    // Update start button text
+    // Update start/pause button
     const startBtn = document.getElementById('startBtn');
-    if (startBtn.textContent !== 'Pause') {
-        startBtn.textContent = isBreak ? 'Break' : 'Start';
+    startBtn.textContent = isRunning ? 'Pause' : (isBreak ? 'Break' : 'Start');
+  }
+  
+  // Start/Pause button
+  document.getElementById('startBtn').addEventListener('click', () => {
+    const startBtn = document.getElementById('startBtn');
+    if (startBtn.textContent === 'Pause') {
+      chrome.runtime.sendMessage({ command: 'pauseTimer' });
+      startBtn.textContent = 'Resume';
+    } else {
+      chrome.runtime.sendMessage({ command: 'startTimer' });
+      startBtn.textContent = 'Pause';
     }
-}
-
-// Initialize auto-restart checkbox state
-chrome.storage.local.get(['autoRestart'], function(result) {
-    const autoRestartCheckbox = document.getElementById('autoRestartCheckbox');
-    autoRestartCheckbox.checked = result.autoRestart !== false; // Default to true
-});
-
-// Add event listener for auto-restart checkbox
-document.getElementById('autoRestartCheckbox').addEventListener('change', (e) => {
-    chrome.storage.local.set({ autoRestart: e.target.checked });
-    chrome.runtime.sendMessage({ command: 'setAutoRestart', value: e.target.checked });
-});
-
-// Add event listener for view logs button
-document.getElementById('viewLogsBtn').addEventListener('click', () => {
-    chrome.tabs.create({ url: 'logs.html' });
-});
-
-document.getElementById('startBtn').addEventListener('click', () => {
-  if (!isRunning) {
-    isRunning = true;
-    chrome.runtime.sendMessage({ command: 'startTimer' });
-    document.getElementById('startBtn').textContent = 'Pause';
-  } else {
-    isRunning = false;
-    chrome.runtime.sendMessage({ command: 'pauseTimer' });
+  });
+  
+  // Reset button
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    chrome.runtime.sendMessage({ command: 'resetTimer' });
     document.getElementById('startBtn').textContent = 'Start';
-  }
-});
-
-document.getElementById('resetBtn').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ command: 'resetTimer' });
-  isRunning = false;
-  document.getElementById('startBtn').textContent = 'Start';
-  document.getElementById('timer').textContent = '25:00';
-});
-
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.timeLeft !== undefined) {
-    isBreak = message.isBreak;
-    updateDisplay(message.timeLeft, message.isBreak);
-    if (message.timeLeft > 0) {
-      isRunning = true;
-      document.getElementById('startBtn').textContent = 'Pause';
-    }
-  }
-});
+  });
+  
+  // View logs button
+  document.getElementById('viewLogsBtn').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'logs.html' });
+  });
+  
+  // Auto-restart checkbox
+  document.getElementById('autoRestartCheckbox').addEventListener('change', (e) => {
+    const autoRestart = e.target.checked;
+    chrome.storage.local.set({ autoRestart });
+    chrome.runtime.sendMessage({ command: 'setAutoRestart', value: autoRestart });
+  });

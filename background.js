@@ -1,30 +1,9 @@
 let timer;
 let timeLeft;
 let isBreak = false;
-// Initialize auto-restart from storage or default to true
 let autoRestart = true;
-chrome.storage.local.get(['autoRestart'], function(result) {
-    autoRestart = result.autoRestart !== false;
-});
 
-// Listen for auto-restart setting changes
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.command === 'setAutoRestart') {
-        autoRestart = message.value;
-    }
-});
-
-// Session log structure
-const createSessionLog = () => ({
-  startTime: new Date().toISOString(),
-  endTime: null,
-  type: isBreak ? 'break' : 'work',
-  duration: isBreak ? 300 : 1500,
-  completed: false
-});
-
-let currentSession = null;
-
+// Listen for messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.command === 'startTimer') {
     startTimer();
@@ -32,76 +11,73 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     pauseTimer();
   } else if (message.command === 'resetTimer') {
     resetTimer();
+  } else if (message.command === 'setAutoRestart') {
+    autoRestart = message.value;
+  } else if (message.command === 'getState') {
+    // Send current state to popup
+    chrome.runtime.sendMessage({
+      timeLeft: timeLeft,
+      isBreak: isBreak,
+      isRunning: timer !== undefined
+    });
   }
 });
 
-function updateBadge(time) {
+// Function to update badge and send state to popup
+function updateTimerDisplay(time) {
   const minutes = Math.floor(time / 60);
   const seconds = time % 60;
   const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  
+  // Update badge
   chrome.action.setBadgeText({ text: display });
   chrome.action.setBadgeBackgroundColor({ color: isBreak ? '#FF0000' : '#4CAF50' });
+  
+  // Send update to popup
+  chrome.runtime.sendMessage({
+    timeLeft: time,
+    isBreak: isBreak,
+    isRunning: true
+  });
 }
 
 function startTimer() {
-  timeLeft = isBreak ? 300 : 1500; // 5 minutes or 25 minutes in seconds
+  if (timer) clearInterval(timer);
   
-  // Create new session log
-  currentSession = createSessionLog();
+  if (!timeLeft) {
+    timeLeft = isBreak ? 300 : 1500; // 5 minutes or 25 minutes
+  }
   
-  // Initialize badge and popup
-  updateBadge(timeLeft);
-  
-  // Send initial state to popup
-  chrome.runtime.sendMessage({ 
-    timeLeft: timeLeft,
-    isBreak: isBreak
-  });
+  updateTimerDisplay(timeLeft);
   
   timer = setInterval(() => {
     timeLeft--;
-    
-    // Send time update to popup and update badge
-    chrome.runtime.sendMessage({ 
-      timeLeft: timeLeft,
-      isBreak: isBreak
-    });
-    updateBadge(timeLeft);
+    updateTimerDisplay(timeLeft);
     
     if (timeLeft <= 0) {
       clearInterval(timer);
-      
-      // Log completed session
-      currentSession.completed = true;
-      currentSession.endTime = new Date().toISOString();
-      saveSessionLog(currentSession);
+      timer = undefined;
       
       if (!isBreak) {
         // Work session ended, start break
         isBreak = true;
+        timeLeft = 300; // 5 minutes
         createBreakTab();
+        startTimer(); // Start break timer
       } else {
         // Break ended
         isBreak = false;
+        timeLeft = 1500; // 25 minutes
+        
+        // Close break tab
         chrome.tabs.query({ url: chrome.runtime.getURL("break.html") }, (tabs) => {
           tabs.forEach(tab => chrome.tabs.remove(tab.id));
           
-          // Auto-restart work session if enabled - after tab is closed
+          // Auto-restart new work session if enabled
           if (autoRestart) {
             setTimeout(() => {
-              isBreak = false;
               startTimer();
-              chrome.runtime.sendMessage({ 
-                timeLeft: 1500,
-                isBreak: false
-              });
-            }, 1000);
-          } else {
-            // Reset the timer display if not auto-restarting
-            chrome.runtime.sendMessage({ 
-              timeLeft: 1500,
-              isBreak: false
-            });
+            }, 500);
           }
         });
       }
@@ -110,40 +86,19 @@ function startTimer() {
 }
 
 function pauseTimer() {
-  clearInterval(timer);
-  if (currentSession) {
-    currentSession.completed = false;
-    currentSession.endTime = new Date().toISOString();
-    saveSessionLog(currentSession);
+  if (timer) {
+    clearInterval(timer);
+    timer = undefined;
+    chrome.runtime.sendMessage({ isRunning: false });
   }
 }
 
 function resetTimer() {
   clearInterval(timer);
-  if (currentSession) {
-    currentSession.completed = false;
-    currentSession.endTime = new Date().toISOString();
-    saveSessionLog(currentSession);
-  }
-  timeLeft = 1500;
+  timer = undefined;
   isBreak = false;
-  chrome.runtime.sendMessage({ timeLeft: timeLeft });
-}
-
-// Save session log to chrome storage
-function saveSessionLog(session) {
-  chrome.storage.local.get(['sessionLogs'], function(result) {
-    const logs = result.sessionLogs || [];
-    logs.push(session);
-    chrome.storage.local.set({ sessionLogs: logs });
-  });
-}
-
-// Function to get all session logs
-function getAllLogs(callback) {
-  chrome.storage.local.get(['sessionLogs'], function(result) {
-    callback(result.sessionLogs || []);
-  });
+  timeLeft = 1500;
+  updateTimerDisplay(timeLeft);
 }
 
 function createBreakTab() {
