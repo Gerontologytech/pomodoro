@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 200px;
+      padding: 10px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    #timer {
+      font-size: 24px;
+      margin: 10px 0;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <div id="timer">25:00</div>
+  <button id="startBtn">Start</button>
+  <button id="resetBtn">Reset</button>
+  <button id="viewLogsBtn">View Logs</button>
+  <div id="autoRestartContainer">
+    <label>
+      <input type="checkbox" id="autoRestartCheckbox" checked>
+      Auto-restart sessions
+    </label>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
